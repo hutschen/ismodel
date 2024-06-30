@@ -50,3 +50,84 @@ class Schutzbedarf:
 
     def __iadd__(self, other: "Schutzbedarf") -> "Schutzbedarf":
         return other.__add__(self)
+
+    @classmethod
+    def bestimme(cls, *schutzbedarfe: "Schutzbedarf | None") -> "Schutzbedarf":
+        schutzbedarf: Schutzbedarf | None = None
+        for s in schutzbedarfe:
+            if s is not None:
+                if schutzbedarf is None:
+                    schutzbedarf = s
+                else:
+                    schutzbedarf += s
+        return schutzbedarf
+
+
+class Struktur:
+    def __init__(
+        self,
+        bezeichnung: str,
+        beschreibung: str | None = None,
+        uebergeordnet: "Struktur" | None = None,
+        anmerkung: str | None = None,
+        versteckt: bool = False,
+        integritaet: Schutzbedarf | None = None,
+        verfuegbarkeit: Schutzbedarf | None = None,
+        vertraulichkeit: Schutzbedarf | None = None,
+    ):
+        self._id: None | int = None
+        self.bezeichnung = bezeichnung
+        self.beschreibung = beschreibung
+        self.anmerkung = anmerkung
+        self._versteckt = versteckt
+        self._integritaet = integritaet
+        self._verfuegbarkeit = verfuegbarkeit
+        self._vertraulichkeit = vertraulichkeit
+        self._uebergeordnet = uebergeordnet
+        self._untergeordnet: set[Struktur] = {}
+
+        if uebergeordnet is not None:
+            uebergeordnet._untergeordnet.add(self)
+
+    @property
+    def ebene(self) -> int:
+        return 0 if self._uebergeordnet is None else self._uebergeordnet.ebene + 1
+
+    @property
+    def versteckt(self) -> bool:
+        return self._uebergeordnet.versteckt or self._versteckt
+
+    @property
+    def integritaet(self) -> Schutzbedarf:
+        Schutzbedarf.bestimme(
+            self._integritaet,
+            *map(lambda a: a.integritaet, self._untergeordnet),
+        )
+
+    @property
+    def verfuegbarkeit(self) -> Schutzbedarf:
+        Schutzbedarf.bestimme(
+            self._verfuegbarkeit,
+            *map(lambda a: a.verfuegbarkeit, self._untergeordnet),
+        )
+
+    @property
+    def vertraulichkeit(self) -> Schutzbedarf:
+        Schutzbedarf.bestimme(
+            self._vertraulichkeit,
+            *map(lambda a: a.vertraulichkeit, self._untergeordnet),
+        )
+
+    def to_dict(self):
+        # fmt: off
+        return {
+            "ID": self._id,
+            "Ebene": self.ebene,
+            "Bezeichnung": self.bezeichnung,
+            "Beschreibung": self.beschreibung,
+            "Anmerkung": self.anmerkung,
+            **{f"Integritaet {k}": v for k, v in self.integritaet.to_dict().items()},
+            **{f"Verfuegbarkeit {k}": v for k, v in self.verfuegbarkeit.to_dict().items()},
+            **{f"Vertraulichkeit {k}": v for k, v in self.vertraulichkeit.to_dict().items()},
+        }
+        # fmt: on
