@@ -30,9 +30,9 @@ SEHR_HOCH = Schutzbedarfskategorie("Sehr hoch", HOCH)
 
 
 class Schutzbedarf:
-    def __init__(self, kategorie: Schutzbedarfskategorie, anmerkung: str | None = None):
+    def __init__(self, kategorie: Schutzbedarfskategorie, *anmerkungen: str):
         self.kategorie = kategorie
-        self.anmerkungen = [] if anmerkung is None else [anmerkung]
+        self.anmerkungen = list(anmerkungen)
 
     def to_dict(self):
         return {
@@ -46,13 +46,13 @@ class Schutzbedarf:
         elif self.kategorie.ordnung > other.kategorie.ordnung:
             return self
         else:
-            return Schutzbedarf(self.kategorie, self.anmerkungen + other.anmerkungen)
+            return Schutzbedarf(self.kategorie, *(self.anmerkungen + other.anmerkungen))
 
     def __iadd__(self, other: "Schutzbedarf") -> "Schutzbedarf":
         return other.__add__(self)
 
     @classmethod
-    def bestimme(cls, *schutzbedarfe: "Schutzbedarf | None") -> "Schutzbedarf":
+    def bestimme(cls, *schutzbedarfe: "Schutzbedarf | None") -> "Schutzbedarf | None":
         schutzbedarf: Schutzbedarf | None = None
         for s in schutzbedarfe:
             if s is not None:
@@ -68,7 +68,7 @@ class Struktur:
         self,
         bezeichnung: str,
         beschreibung: str | None = None,
-        uebergeordnet: "Struktur" | None = None,
+        uebergeordnet: "Struktur | None" = None,
         anmerkung: str | None = None,
         versteckt: bool = False,
         integritaet: Schutzbedarf | None = None,
@@ -84,7 +84,7 @@ class Struktur:
         self._verfuegbarkeit = verfuegbarkeit
         self._vertraulichkeit = vertraulichkeit
         self._uebergeordnet = uebergeordnet
-        self._untergeordnet: set[Struktur] = {}
+        self._untergeordnet: set[Struktur] = set()
 
         if uebergeordnet is not None:
             uebergeordnet._untergeordnet.add(self)
@@ -109,24 +109,26 @@ class Struktur:
 
     @property
     def versteckt(self) -> bool:
-        return self._uebergeordnet.versteckt or self._versteckt
+        return (
+            self._uebergeordnet.versteckt if self._uebergeordnet is not None else False
+        ) or self._versteckt
 
     @property
-    def integritaet(self) -> Schutzbedarf:
+    def integritaet(self) -> Schutzbedarf | None:
         Schutzbedarf.bestimme(
             self._integritaet,
             *map(lambda a: a.integritaet, self._untergeordnet),
         )
 
     @property
-    def verfuegbarkeit(self) -> Schutzbedarf:
+    def verfuegbarkeit(self) -> Schutzbedarf | None:
         Schutzbedarf.bestimme(
             self._verfuegbarkeit,
             *map(lambda a: a.verfuegbarkeit, self._untergeordnet),
         )
 
     @property
-    def vertraulichkeit(self) -> Schutzbedarf:
+    def vertraulichkeit(self) -> Schutzbedarf | None:
         Schutzbedarf.bestimme(
             self._vertraulichkeit,
             *map(lambda a: a.vertraulichkeit, self._untergeordnet),
@@ -134,15 +136,19 @@ class Struktur:
 
     def to_dict(self):
         # fmt: off
+        dict_integritaet = self.integritaet.to_dict() if self.integritaet is not None else {}
+        dict_verfuegbarkeit = self.verfuegbarkeit.to_dict() if self.verfuegbarkeit is not None else {}
+        dict_vertraulichkeit = self.vertraulichkeit.to_dict() if self.vertraulichkeit is not None else {}
+
         return {
             "ID": self._id,
             "Ebene": self.ebene,
             "Bezeichnung": self.bezeichnung,
             "Beschreibung": self.beschreibung,
             "Anmerkung": self.anmerkung,
-            **{f"Integritaet {k}": v for k, v in self.integritaet.to_dict().items()},
-            **{f"Verfuegbarkeit {k}": v for k, v in self.verfuegbarkeit.to_dict().items()},
-            **{f"Vertraulichkeit {k}": v for k, v in self.vertraulichkeit.to_dict().items()},
+            **{f"Integritaet {k}": v for k, v in dict_integritaet.items()},
+            **{f"Verfuegbarkeit {k}": v for k, v in dict_verfuegbarkeit.items()},
+            **{f"Vertraulichkeit {k}": v for k, v in dict_vertraulichkeit.items()},
         }
         # fmt: on
 
