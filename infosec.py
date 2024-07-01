@@ -211,3 +211,30 @@ class Infrastruktur(Struktur):
             **super().to_dict(),
             "Anwendungen": "; ".join(a.bezeichnung_und_id for a in self.anwendungen),
         }
+
+
+class Raum(Struktur):
+    def __init__(
+        self,
+        *args,
+        infrastrukturen: set[Infrastruktur] | None = None,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self._infrastrukturen: set[Infrastruktur] = infrastrukturen or set()
+
+    @property
+    def infrastrukturen(self) -> set[Infrastruktur]:
+        infrastrukturen = set()
+        for i in self._infrastrukturen:
+            infrastrukturen.add(i)
+            infrastrukturen |= i.untergeordnet
+        return infrastrukturen
+
+    def to_dict(self):
+        return {
+            **super().to_dict(),
+            "Infrastrukturen": "; ".join(
+                i.bezeichnung_und_id for i in self.infrastrukturen
+            ),
+        }
