@@ -191,3 +191,23 @@ class Anwendung(Struktur):
             **super().to_dict(),
             "Geschäftsprozesse": "; ".join(p.bezeichnung_und_id for p in self.prozesse),
         }
+
+
+class Infrastruktur(Struktur):
+    def __init__(self, *args, anwendungen: set[Anwendung] | None = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._anwendungen: set[Anwendung] = anwendungen or set()
+
+    @property
+    def anwendungen(self) -> set[Anwendung]:
+        anwendungen = set()
+        for a in self._anwendungen:
+            anwendungen.add(a)
+            anwendungen |= a.untergeordnet
+        return anwendungen
+
+    def to_dict(self):
+        return {
+            **super().to_dict(),
+            "Anwendungen": "; ".join(a.bezeichnung_und_id for a in self.anwendungen),
+        }
