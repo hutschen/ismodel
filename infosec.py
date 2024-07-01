@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from typing import cast
+from typing import Generic, TypeVar, cast
 
 
 class Schutzbedarfskategorie:
@@ -157,22 +157,25 @@ class Struktur:
         # fmt: on
 
 
-class Sekundaerstruktur(Struktur):
-    def __init__(self, *args, abhaengige: set[Struktur] | None = None, **kwargs):
+A = TypeVar("A", bound=Struktur)
+
+
+class Sekundaerstruktur(Generic[A], Struktur):
+    def __init__(self, *args, abhaengige: set[A] | None = None, **kwargs):
         super().__init__(*args, **kwargs)
-        self._abhaengige: set[Struktur] = abhaengige or set()
+        self._abhaengige: set[A] = abhaengige or set()
 
     @property
-    def abhaengige(self) -> "set[Struktur]":
-        abhaengige = set()
+    def abhaengige(self) -> set[A]:
+        abhaengige: set[A] = set()
 
         # Collect all structures subordinate to the dependent structures
         for a in self._abhaengige:
             abhaengige.add(a)
-            abhaengige |= a.untergeordnet
+            abhaengige |= cast(set[A], a.untergeordnet)
 
         # Collect all structures dependent on the subordinate structures
-        for u in cast(set[Sekundaerstruktur], self.untergeordnet):
+        for u in cast(set[Sekundaerstruktur[A]], self.untergeordnet):
             abhaengige |= u.abhaengige
         return abhaengige
 
