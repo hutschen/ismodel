@@ -238,3 +238,23 @@ class Raum(Struktur):
                 i.bezeichnung_und_id for i in self.infrastrukturen
             ),
         }
+
+
+class Gebaeude(Struktur):
+    def __init__(self, *args, raeume: set[Raum] | None = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._raeume: set[Raum] = raeume or set()
+
+    @property
+    def raeume(self) -> set[Raum]:
+        raeume = set()
+        for r in self._raeume:
+            raeume.add(r)
+            raeume |= r.untergeordnet
+        return raeume
+
+    def to_dict(self):
+        return {
+            **super().to_dict(),
+            "Raeume": "; ".join(r.bezeichnung_und_id for r in self.raeume),
+        }
