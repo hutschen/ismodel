@@ -90,8 +90,22 @@ class Struktur:
             uebergeordnet._untergeordnet.add(self)
 
     @property
+    def bezeichnung_und_id(self) -> str:
+        return (
+            self.bezeichnung if self._id is None else f"{self._id}: {self.bezeichnung}"
+        )
+
+    @property
     def ebene(self) -> int:
         return 0 if self._uebergeordnet is None else self._uebergeordnet.ebene + 1
+
+    @property
+    def untergeordnet(self) -> "set[Struktur]":
+        untergeordnet = set()
+        for u in self._untergeordnet:
+            untergeordnet.add(u)
+            untergeordnet |= u.untergeordnet
+        return untergeordnet
 
     @property
     def versteckt(self) -> bool:
@@ -131,3 +145,29 @@ class Struktur:
             **{f"Vertraulichkeit {k}": v for k, v in self.vertraulichkeit.to_dict().items()},
         }
         # fmt: on
+
+
+class Information(Struktur):
+    pass
+
+
+class Geschaeftsprozess(Struktur):
+    def __init__(self, *args, informationen: set[Information] | None = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._informationen: set[Information] = informationen or set()
+
+    @property
+    def informationen(self) -> set[Information]:
+        informationen = set()
+        for i in self._informationen:
+            informationen.add(i)
+            informationen |= i.untergeordnet
+        return informationen
+
+    def to_dict(self):
+        return {
+            **super().to_dict(),
+            "Informationen": "; ".join(
+                i.bezeichnung_und_id for i in self.informationen
+            ),
+        }
