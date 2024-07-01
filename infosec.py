@@ -171,3 +171,23 @@ class Geschaeftsprozess(Struktur):
                 i.bezeichnung_und_id for i in self.informationen
             ),
         }
+
+
+class Anwendung(Struktur):
+    def __init__(self, *args, prozesse: set[Geschaeftsprozess] | None = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._prozesse: set[Geschaeftsprozess] = prozesse or set()
+
+    @property
+    def prozesse(self) -> set[Geschaeftsprozess]:
+        prozesse = set()
+        for p in self._prozesse:
+            prozesse.add(p)
+            prozesse |= p.untergeordnet
+        return prozesse
+
+    def to_dict(self):
+        return {
+            **super().to_dict(),
+            "Geschäftsprozesse": "; ".join(p.bezeichnung_und_id for p in self.prozesse),
+        }
