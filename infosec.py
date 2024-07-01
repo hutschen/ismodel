@@ -14,6 +14,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from typing import cast
+
+
 class Schutzbedarfskategorie:
     def __init__(
         self,
@@ -86,6 +89,7 @@ class Struktur:
         self._uebergeordnet = uebergeordnet
         self._untergeordnet: set[Struktur] = set()
 
+        # Link the structure to its parent structure if it exists
         if uebergeordnet is not None:
             uebergeordnet._untergeordnet.add(self)
 
@@ -151,6 +155,26 @@ class Struktur:
             **{f"Vertraulichkeit {k}": v for k, v in dict_vertraulichkeit.items()},
         }
         # fmt: on
+
+
+class Sekundaerstruktur(Struktur):
+    def __init__(self, *args, abhaengige: set[Struktur] | None = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._abhaengige: set[Struktur] = abhaengige or set()
+
+    @property
+    def abhaengige(self) -> "set[Struktur]":
+        abhaengige = set()
+
+        # Collect all structures subordinate to the dependent structures
+        for a in self._abhaengige:
+            abhaengige.add(a)
+            abhaengige |= a.untergeordnet
+
+        # Collect all structures dependent on the subordinate structures
+        for u in cast(set[Sekundaerstruktur], self.untergeordnet):
+            abhaengige |= u.abhaengige
+        return abhaengige
 
 
 class Information(Struktur):
