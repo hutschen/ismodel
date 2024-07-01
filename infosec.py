@@ -179,6 +179,30 @@ class Sekundaerstruktur(Generic[A], Struktur):
             abhaengige |= u.abhaengige
         return abhaengige
 
+    @property
+    def integritaet(self) -> Schutzbedarf | None:
+        Schutzbedarf.bestimme(
+            self._integritaet,
+            *map(lambda a: a.integritaet, self.abhaengige),
+            *map(lambda u: u.integritaet, self.untergeordnet),
+        )
+
+    @property
+    def verfuegbarkeit(self) -> Schutzbedarf | None:
+        Schutzbedarf.bestimme(
+            self._verfuegbarkeit,
+            *map(lambda a: a.verfuegbarkeit, self.abhaengige),
+            *map(lambda u: u.verfuegbarkeit, self.untergeordnet),
+        )
+
+    @property
+    def vertraulichkeit(self) -> Schutzbedarf | None:
+        Schutzbedarf.bestimme(
+            self._vertraulichkeit,
+            *map(lambda a: a.vertraulichkeit, self.abhaengige),
+            *map(lambda u: u.vertraulichkeit, self.untergeordnet),
+        )
+
 
 class Information(Struktur):
     pass
