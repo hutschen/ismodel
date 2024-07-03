@@ -208,110 +208,48 @@ class Information(Struktur):
     pass
 
 
-class Geschaeftsprozess(Struktur):
-    def __init__(self, *args, informationen: set[Information] | None = None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._informationen: set[Information] = informationen or set()
-
-    @property
-    def informationen(self) -> set[Information]:
-        informationen = set()
-        for i in self._informationen:
-            informationen.add(i)
-            informationen |= i.untergeordnet
-        return informationen
+class Geschaefsprozess(Sekundaerstruktur[Information]):
 
     def to_dict(self):
         return {
             **super().to_dict(),
-            "Informationen": "; ".join(
-                i.bezeichnung_und_id for i in self.informationen
+            "Informationen": "; ".join(i.bezeichnung_und_id for i in self.abhaengige),
+        }
+
+
+class Anwendung(Sekundaerstruktur[Geschaefsprozess]):
+
+    def to_dict(self):
+        return {
+            **super().to_dict(),
+            "Geschäftsprozesse": "; ".join(
+                p.bezeichnung_und_id for p in self.abhaengige
             ),
         }
 
 
-class Anwendung(Struktur):
-    def __init__(self, *args, prozesse: set[Geschaeftsprozess] | None = None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._prozesse: set[Geschaeftsprozess] = prozesse or set()
-
-    @property
-    def prozesse(self) -> set[Geschaeftsprozess]:
-        prozesse = set()
-        for p in self._prozesse:
-            prozesse.add(p)
-            prozesse |= p.untergeordnet
-        return prozesse
+class Infrastruktur(Sekundaerstruktur[Anwendung]):
 
     def to_dict(self):
         return {
             **super().to_dict(),
-            "Geschäftsprozesse": "; ".join(p.bezeichnung_und_id for p in self.prozesse),
+            "Anwendungen": "; ".join(a.bezeichnung_und_id for a in self.abhaengige),
         }
 
 
-class Infrastruktur(Struktur):
-    def __init__(self, *args, anwendungen: set[Anwendung] | None = None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._anwendungen: set[Anwendung] = anwendungen or set()
-
-    @property
-    def anwendungen(self) -> set[Anwendung]:
-        anwendungen = set()
-        for a in self._anwendungen:
-            anwendungen.add(a)
-            anwendungen |= a.untergeordnet
-        return anwendungen
+class Raum(Sekundaerstruktur[Infrastruktur]):
 
     def to_dict(self):
         return {
             **super().to_dict(),
-            "Anwendungen": "; ".join(a.bezeichnung_und_id for a in self.anwendungen),
+            "Infrastrukturen": "; ".join(i.bezeichnung_und_id for i in self.abhaengige),
         }
 
 
-class Raum(Struktur):
-    def __init__(
-        self,
-        *args,
-        infrastrukturen: set[Infrastruktur] | None = None,
-        **kwargs,
-    ):
-        super().__init__(*args, **kwargs)
-        self._infrastrukturen: set[Infrastruktur] = infrastrukturen or set()
-
-    @property
-    def infrastrukturen(self) -> set[Infrastruktur]:
-        infrastrukturen = set()
-        for i in self._infrastrukturen:
-            infrastrukturen.add(i)
-            infrastrukturen |= i.untergeordnet
-        return infrastrukturen
+class Gebaeude(Sekundaerstruktur[Raum]):
 
     def to_dict(self):
         return {
             **super().to_dict(),
-            "Infrastrukturen": "; ".join(
-                i.bezeichnung_und_id for i in self.infrastrukturen
-            ),
-        }
-
-
-class Gebaeude(Struktur):
-    def __init__(self, *args, raeume: set[Raum] | None = None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._raeume: set[Raum] = raeume or set()
-
-    @property
-    def raeume(self) -> set[Raum]:
-        raeume = set()
-        for r in self._raeume:
-            raeume.add(r)
-            raeume |= r.untergeordnet
-        return raeume
-
-    def to_dict(self):
-        return {
-            **super().to_dict(),
-            "Raeume": "; ".join(r.bezeichnung_und_id for r in self.raeume),
+            "Raeume": "; ".join(r.bezeichnung_und_id for r in self.abhaengige),
         }
