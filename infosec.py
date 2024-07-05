@@ -275,7 +275,7 @@ class Modell:
 
     @staticmethod
     def _set_struktur_ids(strukturen: Sequence[Struktur], skip_versteckt: bool = False):
-        for id, s in enumerate(strukturen):
+        for id, s in enumerate(strukturen, start=1):
             if s._id is None and not (s.versteckt and skip_versteckt):
                 s._id = id
 
