@@ -337,10 +337,10 @@ class Modell:
     def write_csvs(self, dirname: str, skip_versteckt: bool = False):
         # fmt: off
         self._set_all_struktur_ids(skip_versteckt)
-        self._write_struktur_dicts_to_csv(self.informationen, f"{dirname}/informationen.csv", skip_versteckt)
-        self._write_struktur_dicts_to_csv(self.prozesse, f"{dirname}/prozesse.csv", skip_versteckt)
-        self._write_struktur_dicts_to_csv(self.anwendungen, f"{dirname}/anwendungen.csv", skip_versteckt)
-        self._write_struktur_dicts_to_csv(self.infrastrukturen, f"{dirname}/infrastrukturen.csv", skip_versteckt)
-        self._write_struktur_dicts_to_csv(self.raeume, f"{dirname}/raeume.csv", skip_versteckt)
-        self._write_struktur_dicts_to_csv(self.gebaeude, f"{dirname}/gebaeude.csv", skip_versteckt)
+        self._write_struktur_dicts_to_csv(self.informationen, f"{dirname}/1_informationen.csv", skip_versteckt)
+        self._write_struktur_dicts_to_csv(self.prozesse, f"{dirname}/2_prozesse.csv", skip_versteckt)
+        self._write_struktur_dicts_to_csv(self.anwendungen, f"{dirname}/3_anwendungen.csv", skip_versteckt)
+        self._write_struktur_dicts_to_csv(self.infrastrukturen, f"{dirname}/4_infrastrukturen.csv", skip_versteckt)
+        self._write_struktur_dicts_to_csv(self.raeume, f"{dirname}/5_raeume.csv", skip_versteckt)
+        self._write_struktur_dicts_to_csv(self.gebaeude, f"{dirname}/6_gebaeude.csv", skip_versteckt)
         # fmt: on
