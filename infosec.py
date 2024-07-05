@@ -50,7 +50,9 @@ class Schutzbedarf:
         elif self.kategorie.ordnung > other.kategorie.ordnung:
             return self
         else:
-            return Schutzbedarf(self.kategorie, *(self.anmerkungen + other.anmerkungen))
+            return Schutzbedarf(
+                self.kategorie, *set(self.anmerkungen + other.anmerkungen)
+            )
 
     def __iadd__(self, other: "Schutzbedarf") -> "Schutzbedarf":
         return other.__add__(self)
