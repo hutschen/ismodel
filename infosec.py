@@ -187,7 +187,7 @@ class Sekundaerstruktur(Generic[A], Struktur):
         return Schutzbedarf.bestimme(
             self._integritaet,
             *map(lambda a: a.integritaet, self.abhaengige),
-            *map(lambda u: u.integritaet, self.untergeordnet),
+            *map(lambda u: u.integritaet, self._untergeordnet),
         )
 
     @property
@@ -195,7 +195,7 @@ class Sekundaerstruktur(Generic[A], Struktur):
         return Schutzbedarf.bestimme(
             self._verfuegbarkeit,
             *map(lambda a: a.verfuegbarkeit, self.abhaengige),
-            *map(lambda u: u.verfuegbarkeit, self.untergeordnet),
+            *map(lambda u: u.verfuegbarkeit, self._untergeordnet),
         )
 
     @property
@@ -203,7 +203,7 @@ class Sekundaerstruktur(Generic[A], Struktur):
         return Schutzbedarf.bestimme(
             self._vertraulichkeit,
             *map(lambda a: a.vertraulichkeit, self.abhaengige),
-            *map(lambda u: u.vertraulichkeit, self.untergeordnet),
+            *map(lambda u: u.vertraulichkeit, self._untergeordnet),
         )
 
 
