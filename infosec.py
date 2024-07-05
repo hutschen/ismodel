@@ -209,7 +209,7 @@ class Information(Struktur):
     pass
 
 
-class Geschaefsprozess(Sekundaerstruktur[Information]):
+class Geschaeftsprozess(Sekundaerstruktur[Information]):
 
     def to_dict(self):
         return {
@@ -218,7 +218,7 @@ class Geschaefsprozess(Sekundaerstruktur[Information]):
         }
 
 
-class Anwendung(Sekundaerstruktur[Geschaefsprozess]):
+class Anwendung(Sekundaerstruktur[Geschaeftsprozess]):
 
     def to_dict(self):
         return {
@@ -260,7 +260,7 @@ class Modell:
     def __init__(
         self,
         informationen: list[Information] | None = None,
-        prozesse: list[Geschaefsprozess] | None = None,
+        prozesse: list[Geschaeftsprozess] | None = None,
         anwendungen: list[Anwendung] | None = None,
         infrastrukturen: list[Infrastruktur] | None = None,
         raeume: list[Raum] | None = None,
