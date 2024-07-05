@@ -123,6 +123,11 @@ class Struktur:
     @property
     def integritaet(self) -> Schutzbedarf | None:
         return Schutzbedarf.bestimme(
+            (
+                self._uebergeordnet._integritaet
+                if self._uebergeordnet is not None
+                else None
+            ),
             self._integritaet,
             *map(lambda a: a.integritaet, self._untergeordnet),
         )
@@ -130,6 +135,11 @@ class Struktur:
     @property
     def verfuegbarkeit(self) -> Schutzbedarf | None:
         return Schutzbedarf.bestimme(
+            (
+                self._uebergeordnet._verfuegbarkeit
+                if self._uebergeordnet is not None
+                else None
+            ),
             self._verfuegbarkeit,
             *map(lambda a: a.verfuegbarkeit, self._untergeordnet),
         )
@@ -137,6 +147,11 @@ class Struktur:
     @property
     def vertraulichkeit(self) -> Schutzbedarf | None:
         return Schutzbedarf.bestimme(
+            (
+                self._uebergeordnet._vertraulichkeit
+                if self._uebergeordnet is not None
+                else None
+            ),
             self._vertraulichkeit,
             *map(lambda a: a.vertraulichkeit, self._untergeordnet),
         )
@@ -185,6 +200,11 @@ class Sekundaerstruktur(Generic[A], Struktur):
     @property
     def integritaet(self) -> Schutzbedarf | None:
         return Schutzbedarf.bestimme(
+            (
+                self._uebergeordnet._integritaet
+                if self._uebergeordnet is not None
+                else None
+            ),
             self._integritaet,
             *map(lambda a: a.integritaet, self.abhaengige),
             *map(lambda u: u.integritaet, self._untergeordnet),
@@ -193,6 +213,11 @@ class Sekundaerstruktur(Generic[A], Struktur):
     @property
     def verfuegbarkeit(self) -> Schutzbedarf | None:
         return Schutzbedarf.bestimme(
+            (
+                self._uebergeordnet._verfuegbarkeit
+                if self._uebergeordnet is not None
+                else None
+            ),
             self._verfuegbarkeit,
             *map(lambda a: a.verfuegbarkeit, self.abhaengige),
             *map(lambda u: u.verfuegbarkeit, self._untergeordnet),
@@ -201,6 +226,11 @@ class Sekundaerstruktur(Generic[A], Struktur):
     @property
     def vertraulichkeit(self) -> Schutzbedarf | None:
         return Schutzbedarf.bestimme(
+            (
+                self._uebergeordnet._vertraulichkeit
+                if self._uebergeordnet is not None
+                else None
+            ),
             self._vertraulichkeit,
             *map(lambda a: a.vertraulichkeit, self.abhaengige),
             *map(lambda u: u.vertraulichkeit, self._untergeordnet),
