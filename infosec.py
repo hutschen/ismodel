@@ -120,21 +120,21 @@ class Struktur:
 
     @property
     def integritaet(self) -> Schutzbedarf | None:
-        Schutzbedarf.bestimme(
+        return Schutzbedarf.bestimme(
             self._integritaet,
             *map(lambda a: a.integritaet, self._untergeordnet),
         )
 
     @property
     def verfuegbarkeit(self) -> Schutzbedarf | None:
-        Schutzbedarf.bestimme(
+        return Schutzbedarf.bestimme(
             self._verfuegbarkeit,
             *map(lambda a: a.verfuegbarkeit, self._untergeordnet),
         )
 
     @property
     def vertraulichkeit(self) -> Schutzbedarf | None:
-        Schutzbedarf.bestimme(
+        return Schutzbedarf.bestimme(
             self._vertraulichkeit,
             *map(lambda a: a.vertraulichkeit, self._untergeordnet),
         )
@@ -182,7 +182,7 @@ class Sekundaerstruktur(Generic[A], Struktur):
 
     @property
     def integritaet(self) -> Schutzbedarf | None:
-        Schutzbedarf.bestimme(
+        return Schutzbedarf.bestimme(
             self._integritaet,
             *map(lambda a: a.integritaet, self.abhaengige),
             *map(lambda u: u.integritaet, self.untergeordnet),
@@ -190,7 +190,7 @@ class Sekundaerstruktur(Generic[A], Struktur):
 
     @property
     def verfuegbarkeit(self) -> Schutzbedarf | None:
-        Schutzbedarf.bestimme(
+        return Schutzbedarf.bestimme(
             self._verfuegbarkeit,
             *map(lambda a: a.verfuegbarkeit, self.abhaengige),
             *map(lambda u: u.verfuegbarkeit, self.untergeordnet),
@@ -198,7 +198,7 @@ class Sekundaerstruktur(Generic[A], Struktur):
 
     @property
     def vertraulichkeit(self) -> Schutzbedarf | None:
-        Schutzbedarf.bestimme(
+        return Schutzbedarf.bestimme(
             self._vertraulichkeit,
             *map(lambda a: a.vertraulichkeit, self.abhaengige),
             *map(lambda u: u.vertraulichkeit, self.untergeordnet),
