@@ -14,7 +14,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from typing import Generic, TypeVar, cast
+import csv
+from typing import Generic, Sequence, TypeVar, cast
 
 
 class Schutzbedarfskategorie:
@@ -253,3 +254,61 @@ class Gebaeude(Sekundaerstruktur[Raum]):
             **super().to_dict(),
             "Raeume": "; ".join(r.bezeichnung_und_id for r in self.abhaengige),
         }
+
+
+class Modell:
+    def __init__(
+        self,
+        informationen: list[Information] | None = None,
+        prozesse: list[Geschaefsprozess] | None = None,
+        anwendungen: list[Anwendung] | None = None,
+        infrastrukturen: list[Infrastruktur] | None = None,
+        raeume: list[Raum] | None = None,
+        gebaeude: list[Gebaeude] | None = None,
+    ):
+        self.informationen = informationen or []
+        self.prozesse = prozesse or []
+        self.anwendungen = anwendungen or []
+        self.infrastrukturen = infrastrukturen or []
+        self.raeume = raeume or []
+        self.gebaeude = gebaeude or []
+
+    @staticmethod
+    def _set_struktur_ids(strukturen: Sequence[Struktur], skip_versteckt: bool = False):
+        for id, s in enumerate(strukturen):
+            if s._id is None and not (s.versteckt and skip_versteckt):
+                s._id = id
+
+    def _set_all_struktur_ids(self, skip_versteckt: bool = False):
+        self._set_struktur_ids(self.informationen, skip_versteckt)
+        self._set_struktur_ids(self.prozesse, skip_versteckt)
+        self._set_struktur_ids(self.anwendungen, skip_versteckt)
+        self._set_struktur_ids(self.infrastrukturen, skip_versteckt)
+        self._set_struktur_ids(self.raeume, skip_versteckt)
+        self._set_struktur_ids(self.gebaeude, skip_versteckt)
+
+    @staticmethod
+    def _write_struktur_dicts_to_csv(
+        strukturen: Sequence[Struktur], filename: str, skip_versteckt: bool = False
+    ):
+        is_first_struktur = True
+        with open(filename, "w", newline="") as file:
+            for s in strukturen:
+                if s.versteckt and skip_versteckt:
+                    continue
+                if is_first_struktur:
+                    writer = csv.DictWriter(file, fieldnames=s.to_dict().keys())
+                    writer.writeheader()
+                    is_first_struktur = False
+                writer.writerow(s.to_dict())
+
+    def write_csvs(self, dirname: str, skip_versteckt: bool = False):
+        # fmt: off
+        self._set_all_struktur_ids(skip_versteckt)
+        self._write_struktur_dicts_to_csv(self.informationen, f"{dirname}/informationen.csv", skip_versteckt)
+        self._write_struktur_dicts_to_csv(self.prozesse, f"{dirname}/prozesse.csv", skip_versteckt)
+        self._write_struktur_dicts_to_csv(self.anwendungen, f"{dirname}/anwendungen.csv", skip_versteckt)
+        self._write_struktur_dicts_to_csv(self.infrastrukturen, f"{dirname}/infrastrukturen.csv", skip_versteckt)
+        self._write_struktur_dicts_to_csv(self.raeume, f"{dirname}/raeume.csv", skip_versteckt)
+        self._write_struktur_dicts_to_csv(self.gebaeude, f"{dirname}/gebaeude.csv", skip_versteckt)
+        # fmt: on
