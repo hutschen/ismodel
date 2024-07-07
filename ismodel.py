@@ -18,316 +18,288 @@ import csv
 from typing import Generic, Sequence, TypeVar, cast
 
 
-class Schutzbedarfskategorie:
+class ProtectionNeedCategory:
     def __init__(
         self,
-        bezeichnung: str,
-        untergeordnet: "Schutzbedarfskategorie | None" = None,
+        designation: str,
+        subordinate: "ProtectionNeedCategory | None" = None,
     ):
-        self.bezeichnung = bezeichnung
-        self.ordnung = 0 if untergeordnet is None else untergeordnet.ordnung + 1
+        self.designation = designation
+        self.level = 0 if subordinate is None else subordinate.level + 1
 
 
-NORMAL = Schutzbedarfskategorie("Normal")
-HOCH = Schutzbedarfskategorie("Hoch", NORMAL)
-SEHR_HOCH = Schutzbedarfskategorie("Sehr hoch", HOCH)
+NORMAL = ProtectionNeedCategory("Normal")
+HIGH = ProtectionNeedCategory("Hoch", NORMAL)
+VERY_HIGH = ProtectionNeedCategory("Sehr hoch", HIGH)
 
 
-class Schutzbedarf:
-    def __init__(self, kategorie: Schutzbedarfskategorie, *anmerkungen: str):
-        self.kategorie = kategorie
-        self.anmerkungen = list(anmerkungen)
+class ProtectionNeed:
+    def __init__(self, category: ProtectionNeedCategory, *remarks: str):
+        self.category = category
+        self.remarks = list(remarks)
 
     def to_dict(self):
         return {
-            "Schutzbedarf": self.kategorie.bezeichnung,
-            "Anmerkungen": "; ".join(self.anmerkungen),
+            "Schutzbedarf": self.category.designation,
+            "Anmerkungen": "; ".join(self.remarks),
         }
 
-    def __add__(self, other: "Schutzbedarf") -> "Schutzbedarf":
-        if self.kategorie.ordnung < other.kategorie.ordnung:
+    def __add__(self, other: "ProtectionNeed") -> "ProtectionNeed":
+        if self.category.level < other.category.level:
             return other
-        elif self.kategorie.ordnung > other.kategorie.ordnung:
+        elif self.category.level > other.category.level:
             return self
         else:
-            return Schutzbedarf(
-                self.kategorie, *set(self.anmerkungen + other.anmerkungen)
-            )
+            return ProtectionNeed(self.category, *set(self.remarks + other.remarks))
 
-    def __iadd__(self, other: "Schutzbedarf") -> "Schutzbedarf":
+    def __iadd__(self, other: "ProtectionNeed") -> "ProtectionNeed":
         return other.__add__(self)
 
     @classmethod
-    def bestimme(cls, *schutzbedarfe: "Schutzbedarf | None") -> "Schutzbedarf | None":
-        schutzbedarf: Schutzbedarf | None = None
-        for s in schutzbedarfe:
-            if s is not None:
-                if schutzbedarf is None:
-                    schutzbedarf = s
+    def determine(
+        cls, *protection_needs: "ProtectionNeed | None"
+    ) -> "ProtectionNeed | None":
+        protection_need: ProtectionNeed | None = None
+        for pn in protection_needs:
+            if pn is not None:
+                if protection_need is None:
+                    protection_need = pn
                 else:
-                    schutzbedarf += s
-        return schutzbedarf
+                    protection_need += pn
+        return protection_need
 
 
-class Struktur:
+class Structure:
     def __init__(
         self,
-        bezeichnung: str,
-        beschreibung: str | None = None,
-        uebergeordnet: "Struktur | None" = None,
-        anmerkung: str | None = None,
-        versteckt: bool = False,
-        integritaet: Schutzbedarf | None = None,
-        verfuegbarkeit: Schutzbedarf | None = None,
-        vertraulichkeit: Schutzbedarf | None = None,
+        name: str,
+        description: str | None = None,
+        parent: "Structure | None" = None,
+        remark: str | None = None,
+        hidden: bool = False,
+        integrity: ProtectionNeed | None = None,
+        availability: ProtectionNeed | None = None,
+        confidentiality: ProtectionNeed | None = None,
     ):
         self._id: None | int = None
-        self.bezeichnung = bezeichnung
-        self.beschreibung = beschreibung
-        self.anmerkung = anmerkung
-        self._versteckt = versteckt
-        self._integritaet = integritaet
-        self._verfuegbarkeit = verfuegbarkeit
-        self._vertraulichkeit = vertraulichkeit
-        self._uebergeordnet = uebergeordnet
-        self._untergeordnet: set[Struktur] = set()
+        self.name = name
+        self.description = description
+        self.remark = remark
+        self._hidden = hidden
+        self._integrity = integrity
+        self._availability = availability
+        self._confidentiality = confidentiality
+        self._parent = parent
+        self._children: set[Structure] = set()
 
         # Link the structure to its parent structure if it exists
-        if uebergeordnet is not None:
-            uebergeordnet._untergeordnet.add(self)
+        if parent is not None:
+            parent._children.add(self)
 
     @property
-    def bezeichnung_und_id(self) -> str:
+    def id_and_name(self) -> str:
+        return self.name if self._id is None else f"{self._id}: {self.name}"
+
+    @property
+    def level(self) -> int:
+        return 0 if self._parent is None else self._parent.level + 1
+
+    @property
+    def children(self) -> "set[Structure]":
+        children = set()
+        for child in self._children:
+            children.add(child)
+            children |= child.children
+        return children
+
+    @property
+    def hidden(self) -> bool:
         return (
-            self.bezeichnung if self._id is None else f"{self._id}: {self.bezeichnung}"
+            self._parent.hidden if self._parent is not None else False
+        ) or self._hidden
+
+    @property
+    def integrity(self) -> ProtectionNeed | None:
+        return ProtectionNeed.determine(
+            (self._parent._integrity if self._parent is not None else None),
+            self._integrity,
+            *map(lambda s: s.integrity, self._children),
         )
 
     @property
-    def ebene(self) -> int:
-        return 0 if self._uebergeordnet is None else self._uebergeordnet.ebene + 1
-
-    @property
-    def untergeordnet(self) -> "set[Struktur]":
-        untergeordnet = set()
-        for u in self._untergeordnet:
-            untergeordnet.add(u)
-            untergeordnet |= u.untergeordnet
-        return untergeordnet
-
-    @property
-    def versteckt(self) -> bool:
-        return (
-            self._uebergeordnet.versteckt if self._uebergeordnet is not None else False
-        ) or self._versteckt
-
-    @property
-    def integritaet(self) -> Schutzbedarf | None:
-        return Schutzbedarf.bestimme(
-            (
-                self._uebergeordnet._integritaet
-                if self._uebergeordnet is not None
-                else None
-            ),
-            self._integritaet,
-            *map(lambda a: a.integritaet, self._untergeordnet),
+    def availability(self) -> ProtectionNeed | None:
+        return ProtectionNeed.determine(
+            (self._parent._availability if self._parent is not None else None),
+            self._availability,
+            *map(lambda s: s.availability, self._children),
         )
 
     @property
-    def verfuegbarkeit(self) -> Schutzbedarf | None:
-        return Schutzbedarf.bestimme(
-            (
-                self._uebergeordnet._verfuegbarkeit
-                if self._uebergeordnet is not None
-                else None
-            ),
-            self._verfuegbarkeit,
-            *map(lambda a: a.verfuegbarkeit, self._untergeordnet),
-        )
-
-    @property
-    def vertraulichkeit(self) -> Schutzbedarf | None:
-        return Schutzbedarf.bestimme(
-            (
-                self._uebergeordnet._vertraulichkeit
-                if self._uebergeordnet is not None
-                else None
-            ),
-            self._vertraulichkeit,
-            *map(lambda a: a.vertraulichkeit, self._untergeordnet),
+    def confidentiality(self) -> ProtectionNeed | None:
+        return ProtectionNeed.determine(
+            (self._parent._confidentiality if self._parent is not None else None),
+            self._confidentiality,
+            *map(lambda s: s.confidentiality, self._children),
         )
 
     def to_dict(self):
         # fmt: off
-        dict_integritaet = self.integritaet.to_dict() if self.integritaet is not None else {}
-        dict_verfuegbarkeit = self.verfuegbarkeit.to_dict() if self.verfuegbarkeit is not None else {}
-        dict_vertraulichkeit = self.vertraulichkeit.to_dict() if self.vertraulichkeit is not None else {}
+        dict_integrity = self.integrity.to_dict() if self.integrity is not None else {}
+        dict_availability = self.availability.to_dict() if self.availability is not None else {}
+        dict_confidentiality = self.confidentiality.to_dict() if self.confidentiality is not None else {}
 
         return {
             "ID": self._id,
-            "Ebene": self.ebene,
-            "Bezeichnung": self.bezeichnung,
-            "Beschreibung": self.beschreibung,
-            "Anmerkung": self.anmerkung,
-            **{f"Integritaet {k}": v for k, v in dict_integritaet.items()},
-            **{f"Verfuegbarkeit {k}": v for k, v in dict_verfuegbarkeit.items()},
-            **{f"Vertraulichkeit {k}": v for k, v in dict_vertraulichkeit.items()},
+            "Ebene": self.level,
+            "Name": self.name,
+            "Beschreibung": self.description,
+            "Anmerkung": self.remark,
+            **{f"Integrität {k}": v for k, v in dict_integrity.items()},
+            **{f"Verfügbarkeit {k}": v for k, v in dict_availability.items()},
+            **{f"Vertraulichkeit {k}": v for k, v in dict_confidentiality.items()},
         }
         # fmt: on
 
 
-A = TypeVar("A", bound=Struktur)
+A = TypeVar("A", bound=Structure)
 
 
-class Sekundaerstruktur(Generic[A], Struktur):
-    def __init__(self, *args, abhaengige: set[A] | None = None, **kwargs):
+class SecondaryStructure(Generic[A], Structure):
+    def __init__(self, *args, dependent: set[A] | None = None, **kwargs):
         super().__init__(*args, **kwargs)
-        self._abhaengige: set[A] = abhaengige or set()
+        self._dependent: set[A] = dependent or set()
 
     @property
-    def abhaengige(self) -> set[A]:
-        abhaengige: set[A] = set()
+    def dependent(self) -> set[A]:
+        dependent: set[A] = set()
 
         # Collect all structures subordinate to the dependent structures
-        for a in self._abhaengige:
-            abhaengige.add(a)
-            abhaengige |= cast(set[A], a.untergeordnet)
+        for d in self._dependent:
+            dependent.add(d)
+            dependent |= cast(set[A], d.children)
 
         # Collect all structures dependent on the subordinate structures
-        for u in cast(set[Sekundaerstruktur[A]], self.untergeordnet):
-            abhaengige |= u.abhaengige
-        return abhaengige
+        for sub in cast(set[SecondaryStructure[A]], self.children):
+            dependent |= sub.dependent
+        return dependent
 
     @property
-    def integritaet(self) -> Schutzbedarf | None:
-        return Schutzbedarf.bestimme(
-            (
-                self._uebergeordnet._integritaet
-                if self._uebergeordnet is not None
-                else None
-            ),
-            self._integritaet,
-            *map(lambda a: a.integritaet, self.abhaengige),
-            *map(lambda u: u.integritaet, self._untergeordnet),
+    def integrity(self) -> ProtectionNeed | None:
+        return ProtectionNeed.determine(
+            (self._parent._integrity if self._parent is not None else None),
+            self._integrity,
+            *map(lambda d: d.integrity, self.dependent),
+            *map(lambda sub: sub.integrity, self._children),
         )
 
     @property
-    def verfuegbarkeit(self) -> Schutzbedarf | None:
-        return Schutzbedarf.bestimme(
-            (
-                self._uebergeordnet._verfuegbarkeit
-                if self._uebergeordnet is not None
-                else None
-            ),
-            self._verfuegbarkeit,
-            *map(lambda a: a.verfuegbarkeit, self.abhaengige),
-            *map(lambda u: u.verfuegbarkeit, self._untergeordnet),
+    def availability(self) -> ProtectionNeed | None:
+        return ProtectionNeed.determine(
+            (self._parent._availability if self._parent is not None else None),
+            self._availability,
+            *map(lambda d: d.availability, self.dependent),
+            *map(lambda sub: sub.availability, self._children),
         )
 
     @property
-    def vertraulichkeit(self) -> Schutzbedarf | None:
-        return Schutzbedarf.bestimme(
-            (
-                self._uebergeordnet._vertraulichkeit
-                if self._uebergeordnet is not None
-                else None
-            ),
-            self._vertraulichkeit,
-            *map(lambda a: a.vertraulichkeit, self.abhaengige),
-            *map(lambda u: u.vertraulichkeit, self._untergeordnet),
+    def confidentiality(self) -> ProtectionNeed | None:
+        return ProtectionNeed.determine(
+            (self._parent._confidentiality if self._parent is not None else None),
+            self._confidentiality,
+            *map(lambda d: d.confidentiality, self.dependent),
+            *map(lambda sub: sub.confidentiality, self._children),
         )
 
 
-class Information(Struktur):
+class Information(Structure):
     pass
 
 
-class Geschaeftsprozess(Sekundaerstruktur[Information]):
+class BusinessProcess(SecondaryStructure[Information]):
 
     def to_dict(self):
         return {
             **super().to_dict(),
-            "Informationen": "; ".join(i.bezeichnung_und_id for i in self.abhaengige),
+            "Information": "; ".join(i.id_and_name for i in self.dependent),
         }
 
 
-class Anwendung(Sekundaerstruktur[Geschaeftsprozess]):
+class Application(SecondaryStructure[BusinessProcess]):
 
     def to_dict(self):
         return {
             **super().to_dict(),
-            "Geschäftsprozesse": "; ".join(
-                p.bezeichnung_und_id for p in self.abhaengige
-            ),
+            "Geschäftsprozesse": "; ".join(p.id_and_name for p in self.dependent),
         }
 
 
-class Infrastruktur(Sekundaerstruktur[Anwendung]):
+class Infrastructure(SecondaryStructure[Application]):
 
     def to_dict(self):
         return {
             **super().to_dict(),
-            "Anwendungen": "; ".join(a.bezeichnung_und_id for a in self.abhaengige),
+            "Anwendungen": "; ".join(a.id_and_name for a in self.dependent),
         }
 
 
-class Raum(Sekundaerstruktur[Infrastruktur]):
+class Room(SecondaryStructure[Infrastructure]):
 
     def to_dict(self):
         return {
             **super().to_dict(),
-            "Infrastrukturen": "; ".join(i.bezeichnung_und_id for i in self.abhaengige),
+            "Infrastrukturen": "; ".join(i.id_and_name for i in self.dependent),
         }
 
 
-class Gebaeude(Sekundaerstruktur[Raum]):
+class Building(SecondaryStructure[Room]):
 
     def to_dict(self):
         return {
             **super().to_dict(),
-            "Raeume": "; ".join(r.bezeichnung_und_id for r in self.abhaengige),
+            "Räume": "; ".join(r.id_and_name for r in self.dependent),
         }
 
 
-class Modell:
+class Model:
     def __init__(
         self,
-        informationen: list[Information] | None = None,
-        prozesse: list[Geschaeftsprozess] | None = None,
-        anwendungen: list[Anwendung] | None = None,
-        infrastrukturen: list[Infrastruktur] | None = None,
-        raeume: list[Raum] | None = None,
-        gebaeude: list[Gebaeude] | None = None,
+        informations: list[Information] | None = None,
+        processes: list[BusinessProcess] | None = None,
+        applications: list[Application] | None = None,
+        infrastructures: list[Infrastructure] | None = None,
+        rooms: list[Room] | None = None,
+        buildings: list[Building] | None = None,
     ):
-        self.informationen = informationen or []
-        self.prozesse = prozesse or []
-        self.anwendungen = anwendungen or []
-        self.infrastrukturen = infrastrukturen or []
-        self.raeume = raeume or []
-        self.gebaeude = gebaeude or []
+        self.informations = informations or []
+        self.processes = processes or []
+        self.applications = applications or []
+        self.infrastructures = infrastructures or []
+        self.rooms = rooms or []
+        self.buildings = buildings or []
 
     @staticmethod
-    def _set_struktur_ids(strukturen: Sequence[Struktur], skip_versteckt: bool = False):
-        for id, s in enumerate(strukturen, start=1):
-            if s._id is None and not (s.versteckt and skip_versteckt):
+    def _set_structure_ids(structures: Sequence[Structure], skip_hidden: bool = False):
+        for id, s in enumerate(structures, start=1):
+            if s._id is None and not (s.hidden and skip_hidden):
                 s._id = id
 
-    def _set_all_struktur_ids(self, skip_versteckt: bool = False):
-        self._set_struktur_ids(self.informationen, skip_versteckt)
-        self._set_struktur_ids(self.prozesse, skip_versteckt)
-        self._set_struktur_ids(self.anwendungen, skip_versteckt)
-        self._set_struktur_ids(self.infrastrukturen, skip_versteckt)
-        self._set_struktur_ids(self.raeume, skip_versteckt)
-        self._set_struktur_ids(self.gebaeude, skip_versteckt)
+    def _set_all_structure_ids(self, skip_hidden: bool = False):
+        self._set_structure_ids(self.informations, skip_hidden)
+        self._set_structure_ids(self.processes, skip_hidden)
+        self._set_structure_ids(self.applications, skip_hidden)
+        self._set_structure_ids(self.infrastructures, skip_hidden)
+        self._set_structure_ids(self.rooms, skip_hidden)
+        self._set_structure_ids(self.buildings, skip_hidden)
 
     @staticmethod
-    def _write_struktur_dicts_to_csv(
-        strukturen: Sequence[Struktur], filename: str, skip_versteckt: bool = False
+    def _write_structure_dicts_to_csv(
+        structures: Sequence[Structure], filename: str, skip_hidden: bool = False
     ):
         # Determine fieldnames and dicts to write to CSV
         fieldnames = []
         data_dicts = []
-        for s in strukturen:
-            if s.versteckt and skip_versteckt:
+        for s in structures:
+            if s.hidden and skip_hidden:
                 continue
             data = s.to_dict()
             data_dicts.append(data)
@@ -342,13 +314,13 @@ class Modell:
             for data in data_dicts:
                 writer.writerow(data)
 
-    def write_csvs(self, dirname: str, skip_versteckt: bool = False):
+    def write_csvs(self, dirname: str, skip_hidden: bool = False):
         # fmt: off
-        self._set_all_struktur_ids(skip_versteckt)
-        self._write_struktur_dicts_to_csv(self.informationen, f"{dirname}/1_informationen.csv", skip_versteckt)
-        self._write_struktur_dicts_to_csv(self.prozesse, f"{dirname}/2_prozesse.csv", skip_versteckt)
-        self._write_struktur_dicts_to_csv(self.anwendungen, f"{dirname}/3_anwendungen.csv", skip_versteckt)
-        self._write_struktur_dicts_to_csv(self.infrastrukturen, f"{dirname}/4_infrastrukturen.csv", skip_versteckt)
-        self._write_struktur_dicts_to_csv(self.raeume, f"{dirname}/5_raeume.csv", skip_versteckt)
-        self._write_struktur_dicts_to_csv(self.gebaeude, f"{dirname}/6_gebaeude.csv", skip_versteckt)
+        self._set_all_structure_ids(skip_hidden)
+        self._write_structure_dicts_to_csv(self.informations, f"{dirname}/1_informationen.csv", skip_hidden)
+        self._write_structure_dicts_to_csv(self.processes, f"{dirname}/2_prozesse.csv", skip_hidden)
+        self._write_structure_dicts_to_csv(self.applications, f"{dirname}/3_anwendungen.csv", skip_hidden)
+        self._write_structure_dicts_to_csv(self.infrastructures, f"{dirname}/4_infrastrukturen.csv", skip_hidden)
+        self._write_structure_dicts_to_csv(self.rooms, f"{dirname}/5_raeume.csv", skip_hidden)
+        self._write_structure_dicts_to_csv(self.buildings, f"{dirname}/6_gebaeude.csv", skip_hidden)
         # fmt: on
