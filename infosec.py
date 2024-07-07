@@ -323,16 +323,24 @@ class Modell:
     def _write_struktur_dicts_to_csv(
         strukturen: Sequence[Struktur], filename: str, skip_versteckt: bool = False
     ):
-        is_first_struktur = True
-        with open(filename, "w", newline="") as file:
-            for s in strukturen:
-                if s.versteckt and skip_versteckt:
-                    continue
-                if is_first_struktur:
-                    writer = csv.DictWriter(file, fieldnames=s.to_dict().keys())
-                    writer.writeheader()
-                    is_first_struktur = False
-                writer.writerow(s.to_dict())
+        # Determine fieldnames and dicts to write to CSV
+        fieldnames = []
+        data_dicts = []
+        for s in strukturen:
+            if s.versteckt and skip_versteckt:
+                continue
+            data = s.to_dict()
+            data_dicts.append(data)
+            keys = data.keys()
+            if len(keys) > len(fieldnames):
+                fieldnames = keys
+
+        # Write dicts to CSV
+        with open(filename, "w", encoding="utf-8-sig") as file:
+            writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter=";")
+            writer.writeheader()
+            for data in data_dicts:
+                writer.writerow(data)
 
     def write_csvs(self, dirname: str, skip_versteckt: bool = False):
         # fmt: off
