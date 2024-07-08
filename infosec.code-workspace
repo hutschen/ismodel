@@ -1,0 +1,22 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "files.eol": "\n",
+    "licenser.license": "AGPLv3",
+    "licenser.projectName": "InfoSec",
+    "python.testing.pytestArgs": ["tests"],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.analysis.typeCheckingMode": "basic",
+    "python.languageServer": "Pylance",
+    "editor.formatOnSave": true,
+    "[python]": {
+      "editor.defaultFormatter": "ms-python.black-formatter",
+      "editor.rulers": [88]
+    }
+  }
+}
