@@ -308,7 +308,7 @@ class Model:
                 fieldnames = keys
 
         # Write dicts to CSV
-        with open(filename, "w", encoding="utf-8-sig") as file:
+        with open(filename, "w", newline="", encoding="utf-8-sig") as file:
             writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter=";")
             writer.writeheader()
             for data in data_dicts:
