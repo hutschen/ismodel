@@ -151,6 +151,7 @@ class Structure:
         return {
             "ID": self._id,
             "Ebene": self.level,
+            "Übergeordnet": "" if self._parent is None else self._parent.id_and_name,
             "Name": self.name,
             "Beschreibung": self.description,
             "Anmerkung": self.remark,
