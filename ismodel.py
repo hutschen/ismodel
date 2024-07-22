@@ -151,6 +151,7 @@ class Structure:
         return {
             "ID": self._id,
             "Ebene": self.level,
+            "Übergeordnet": "" if self._parent is None else self._parent.id_and_name,
             "Name": self.name,
             "Beschreibung": self.description,
             "Anmerkung": self.remark,
@@ -308,7 +309,7 @@ class Model:
                 fieldnames = keys
 
         # Write dicts to CSV
-        with open(filename, "w", encoding="utf-8-sig") as file:
+        with open(filename, "w", newline="", encoding="utf-8-sig") as file:
             writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter=";")
             writer.writeheader()
             for data in data_dicts:
